@@ -49,6 +49,7 @@ class ServiceType(StrEnum):
     firewall = "firewall"
     object_storage = "object_storage"
     aclb = "aclb"
+    netloadbalancer = "netloadbalancer"
 
 
 class MetricType(StrEnum):
@@ -82,6 +83,10 @@ class MetricUnit(StrEnum):
     RATIO = "ratio"
     OPS_PER_SECOND = "ops_per_second"
     IOPS = "iops"
+    KILO_BYTES_PER_SECOND = "kilo_bytes_per_second"
+    SESSIONS_PER_SECOND = "sessions_per_second"
+    PACKETS_PER_SECOND = "packets_per_second"
+    KILO_BITS_PER_SECOND = "kilo_bits_per_second"
 
 
 class DashboardType(StrEnum):
@@ -91,6 +96,17 @@ class DashboardType(StrEnum):
 
     standard = "standard"
     custom = "custom"
+
+
+@dataclass
+class Filter(JSONObject):
+    """
+    Represents a filter in the filters list of a dashboard widget.
+    """
+
+    dimension_label: str = ""
+    operator: str = ""
+    value: str = ""
 
 
 @dataclass
@@ -107,6 +123,19 @@ class DashboardWidget(JSONObject):
     chart_type: ChartType = ""
     y_label: str = ""
     aggregate_function: AggregateFunction = ""
+    group_by: list[str] = field(default_factory=list)
+    filters: list[Filter] | None = None
+
+
+@dataclass
+class ServiceAlert(JSONObject):
+    """
+    Represents alert configuration options for a monitor service.
+    """
+
+    polling_interval_seconds: list[int] = field(default_factory=list)
+    evaluation_period_seconds: list[int] = field(default_factory=list)
+    scope: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -115,9 +144,9 @@ class Dimension(JSONObject):
     Represents a single dimension in the dimensions list.
     """
 
-    dimension_label: Optional[str] = None
-    label: Optional[str] = None
-    values: Optional[List[str]] = None
+    dimension_label: str | None = None
+    label: str | None = None
+    values: list[str] | None = None
 
 
 @dataclass
@@ -134,8 +163,8 @@ class MonitorMetricsDefinition(JSONObject):
     unit: MetricUnit = ""
     scrape_interval: int = 0
     is_alertable: bool = False
-    dimensions: Optional[List[Dimension]] = None
-    available_aggregate_functions: List[AggregateFunction] = field(
+    dimensions: list[Dimension] | None = None
+    available_aggregate_functions: list[AggregateFunction] = field(
         default_factory=list
     )
 
@@ -154,7 +183,7 @@ class MonitorDashboard(Base):
         "label": Property(),
         "service_type": Property(ServiceType),
         "type": Property(DashboardType),
-        "widgets": Property(List[DashboardWidget]),
+        "widgets": Property(list[DashboardWidget]),
         "updated": Property(is_datetime=True),
     }
 
@@ -171,6 +200,7 @@ class MonitorService(Base):
     properties = {
         "service_type": Property(ServiceType),
         "label": Property(),
+        "alert": Property(json_object=ServiceAlert),
     }
 
 
